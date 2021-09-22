@@ -1,5 +1,7 @@
 # ignore all subdirectories
 */*
+peakbot/
+peakbot_example/
 
 # ignore generated files from the scripts
 *.pickle
