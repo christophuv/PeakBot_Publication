@@ -130,10 +130,8 @@ futile.logger::flog.threshold(futile.logger::ERROR, name = "VennDiagramLogger")
 
 source("~/LV_DataScience/impl/ext__exportAsFeatureML.R")
 
-files = c("05_EB3388_AOH_p_0",  "06_EB3389_AOH_p_10",
-          "07_EB3390_AOH_p_20", "08_EB3391_AOH_p_60",
-          "16_EB3392_AME_p_0",  "17_EB3393_AME_p_10",
-          "18_EB3394_AME_p_20", "19_EB3395_AME_p_6")
+files = c("05_EB3388_AOH_p_0",  "06_EB3389_AOH_p_10", "07_EB3390_AOH_p_20", "08_EB3391_AOH_p_60",
+          "16_EB3392_AME_p_0",  "17_EB3393_AME_p_10", "18_EB3394_AME_p_20", "19_EB3395_AME_p_60")
 
 res = matrix(0, ncol=6, nrow=0)
 colnames(res)=c("only xcms", "only xcms %", "both", "both %", "only PeakBot", "only PeakBot %")
@@ -144,7 +142,7 @@ for(fi in files){
   peaksXCMS <- cbind(peaksXCMS, foundPB = 0, num = 0)
   #plot(peaksXCMS$rt, peaksXCMS$mz, xlim=c(100, 750), ylim=c(100, 1000))
   
-  peaksPB   <- read.table(paste0("./", fi, ".tsv"), sep="\t", quote="", header=TRUE)
+  peaksPB   <- read.table(paste0("./", fi, "_positivePeakBot.tsv"), sep="\t", quote="", header=TRUE)
   peaksPB   <- cbind(peaksPB, foundXCMS = 0, num = 0)
   #plot(peaksPB$RT, peaksPB$MZ, xlim=c(100, 750), ylim=c(100, 1000))
   
@@ -183,55 +181,53 @@ for(fi in files){
   }
   
   l = list(xcms = peaksXCMS$num, PeakBot   = peaksPB$num)
-  a = length(setdiff(l$xcms, l$PeakBot))
-  ab = length(intersect(l$xcms, l$PeakBot))
-  b = length(setdiff(l$PeakBot, l$xcms))
+  a = length(unique(setdiff(l$xcms, l$PeakBot)))
+  ab = length(unique(intersect(l$xcms, l$PeakBot)))
+  b = length(unique(setdiff(l$PeakBot, l$xcms)))
   res = rbind(res, c(a, round(a/(a+ab+b)*100,2), ab, round(ab/(a+ab+b)*100,2), b, round(b/(a+ab+b)*100,2)))
   rownames(res)[nrow(res)] = fi
   
   grid.newpage()
   grid.draw(venn.diagram(x = l, filename=NULL))
   
-  p <- ggplot(data=dat, mapping=aes(x=rtdiff, y=mzdiff))
-  p <- p + geom_point()
-  p <- p + ggtitle("Difference in retention time and m/z between XCMS and PeakBot", subtitle=paste0("File: ", gsub(".tsv", "", gsub("./pos/centroid/", "", fi)))) + xlab("Difference in retention time (seconds)") + ylab("Difference in m/z (ppm)")
-  print(p)
-  ggsave("/home/users/cbueschl/LCHRMS-GPU/difference.png", width=8, height=5, dpi=300)
-  
-  dat = data.frame(rt = c(), mz = c(), found = c())
-  
-  dat = rbind(dat, data.frame(rt = peaksXCMS[peaksXCMS$foundPB>0,"rt"], mz = peaksXCMS[peaksXCMS$foundPB>0,"mz"], found="XCMS and PeakBot"))
-  #plot(peaksXCMS$rt[peaksXCMS$foundPB>0], peaksXCMS$mz[peaksXCMS$foundPB>0], xlim=c(100, 750), ylim=c(100, 1000))
   exportAsFeatureXML(peaksXCMS[peaksXCMS$foundPB>0,], gsub("_xcms.tsv", "_both.featureML", fi))
   write.table(peaksXCMS[peaksXCMS$foundPB>0,], gsub("_xcms.tsv", "_both.tsv", fi), col.names=NA)
   
-  dat = rbind(dat, data.frame(rt = peaksXCMS[peaksXCMS$foundPB==0,"rt"], mz = peaksXCMS[peaksXCMS$foundPB==0,"mz"], found="XCMS"))
-  #plot(peaksXCMS$rt[peaksXCMS$foundPB==0], peaksXCMS$mz[peaksXCMS$foundPB==0], xlim=c(100, 750), ylim=c(100, 1000))
-  exportAsFeatureXML(peaksXCMS[peaksXCMS$foundPB==0,], gsub("_xcms.tsv", "_xcmsOnly.featureML", fi))
-  write.table(peaksXCMS[peaksXCMS$foundPB==0,], gsub("_xcms.tsv", "_xcmsOnly.tsv", fi), col.names=NA)
-  
-  dat = rbind(dat, data.frame(rt = peaksPB[peaksPB$foundXCMS==0,"RT"], mz = peaksPB[peaksPB$foundXCMS==0,"MZ"], found="PeakBot"))
-  #plot(peaksPB$RT[peaksPB$foundXCMS==0], peaksPB$MZ[peaksPB$foundXCMS==0], xlim=c(100, 750), ylim=c(100, 1000))
+  if(fi=="08_EB3391_AOH_p_60"){
+    peaksPB = cbind(peaksPB, annotation = "")
+    anno = read.table("/home/users/cbueschl/LCHRMS-GPU/peakbot_example/Data/PHM/PositiveCentroidMode/__Annotated__08_EB3391_AOH_p_60_PBOnly.tsv", sep="\t", header=TRUE)
+    for(rowi in 1:nrow(peaksPB)){
+      rt = peaksPB[rowi,"RT"]
+      mz = peaksPB[rowi,"MZ"]
+      for(rowj in 1:nrow(anno)){
+        if(abs(anno[rowj,"RT"]-rt)<=2 && abs(anno[rowj,"MZ"]-mz)*1E6/mz<=5){
+          peaksPB[rowi,"annotation"] = anno[rowj, "Type"]
+        }
+      }
+    }
+    print(paste0("Features only detected by PeakBot in sample ", fi))
+    print(table(peaksPB[peaksPB$foundXCMS==0,"annotation"]))
+  }
   exportAsFeatureXML(peaksPB[peaksPB$foundXCMS==0,], gsub("_xcms.tsv", "_PBOnly.featureML", fi), "RT", "MZ", "RtStart", "RtEnd", "MzStart", "MzEnd")
   write.table(peaksPB[peaksPB$foundXCMS==0,], gsub("_xcms.tsv", "_PBOnly.tsv", fi), col.names=NA)
   
-  p <- ggplot(data=dat, mapping=aes(x=rt, y=mz, group=found))
-  p <- p + geom_point()
-  p <- p + facet_wrap(~found, ncol=1)
-  p <- p + ggtitle("Comparison of detected features", subtitle=paste0("File: ", gsub(".tsv", "", gsub("./pos/centroid/", "", fi)))) + xlab("Retention time (seconds)") + ylab("m/z")
-  print(p)
-  ggsave("/home/users/cbueschl/LCHRMS-GPU/found.png", width=5, height=8, dpi=300)
+  
+  if(fi=="08_EB3391_AOH_p_60"){
+    peaksXCMS = cbind(peaksXCMS, annotation = "")
+    anno = read.table("/home/users/cbueschl/LCHRMS-GPU/peakbot_example/Data/PHM/PositiveCentroidMode/__Annotated__08_EB3391_AOH_p_60_xcmsOnly.tsv", sep="\t", header=TRUE)
+    for(rowi in 1:nrow(peaksXCMS)){
+      rt = peaksXCMS[rowi,"rt"]
+      mz = peaksXCMS[rowi,"mz"]
+      for(rowj in 1:nrow(anno)){
+        if(abs(anno[rowj,"rt"]-rt)<=2 && abs(anno[rowj,"mz"]-mz)*1E6/mz<=5){
+          peaksXCMS[rowi,"annotation"] = anno[rowj, "Type"]
+        }
+      }
+    }
+    print(paste0("Features only detected by XCMS in sample ", fi))
+    print(table(peaksXCMS[peaksXCMS$foundPB==0,"annotation"]))
+  }
+  exportAsFeatureXML(peaksXCMS[peaksXCMS$foundPB==0,], gsub("_xcms.tsv", "_xcmsOnly.featureML", fi))
+  write.table(peaksXCMS[peaksXCMS$foundPB==0,], gsub("_xcms.tsv", "_xcmsOnly.tsv", fi), col.names=NA)
 }
-res
-
-
-
-
-
-
-
-
-
-
-
-
+print(res)
