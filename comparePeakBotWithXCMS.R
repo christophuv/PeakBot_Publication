@@ -178,6 +178,7 @@ for(fi in files){
       peaksPB$num[rowj] = cur
       cur = cur + 1
     }
+    
   }
   
   l = list(xcms = peaksXCMS$num, PeakBot   = peaksPB$num)
@@ -194,6 +195,7 @@ for(fi in files){
   write.table(peaksXCMS[peaksXCMS$foundPB>0,], gsub("_xcms.tsv", "_both.tsv", fi), col.names=NA)
   
   if(fi=="08_EB3391_AOH_p_60"){
+    
     peaksPB = cbind(peaksPB, annotation = "")
     anno = read.table("/home/users/cbueschl/LCHRMS-GPU/peakbot_example/Data/PHM/PositiveCentroidMode/__Annotated__08_EB3391_AOH_p_60_PBOnly.tsv", sep="\t", header=TRUE)
     for(rowi in 1:nrow(peaksPB)){
@@ -231,3 +233,4 @@ for(fi in files){
   write.table(peaksXCMS[peaksXCMS$foundPB==0,], gsub("_xcms.tsv", "_xcmsOnly.tsv", fi), col.names=NA)
 }
 print(res)
+
