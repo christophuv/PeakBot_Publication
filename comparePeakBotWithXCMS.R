@@ -2,7 +2,7 @@
 
 rm(list=ls())
 cat("\014")  
-setwd("/home/users/cbueschl/LCHRMS-GPU/peakbot_example/Data/PHM/PositiveCentroidMode")
+setwd("/home/users/cbueschl/PeakBot/peakbot_example/Data/PHM/PositiveCentroidMode")
 
 # xset@peaks[xset@peaks[,"mz"]<175.1230 & xset@peaks[,"mz"]>175.1100 &
 #            xset@peaks[,"rt"]<230 & xset@peaks[,"rt"]>210,]
@@ -30,86 +30,88 @@ cpus=32
 totTime=0
 overallStartTime=tic()
 
-#############################
-### process LC-HRMS dataset with XCMS
-### 1. find features (i.e. chromatographic peaks) in each sample file (mzXML)
-{
-  tic()                                             ## start the timer
-  xset<-xcmsSet(method="centWave",                  ## XCMS processing with the centWave algorithm
-                files=".",                          ##      files to process
-                peakwidth=c(2, 5),                  ##      set the expected chromatographic peak width (baseline)
-                ppm=5,                              ##      set the expected/allowed ppm deviation
-                snthr=5,                            ##      minimum signal-to-noise ratio for chromatographic peaks in EICs
-                
-                integrate=1,                        ##      specify that the peak borders shall be found via the wavelet transformed data 
-                mzCenterFun="wMeanApex3",           ##      this specifies how the features' mz values should be calculated
-                mzdiff=0.0025,                      ##      minimum m/z difference for RT-overlapping chromatographic peaks
-                prefilter=c(1, 1E5),                ##      filter criterion for initial ROI generation
-                noise=5000,                         ##      noise intensity level
-                fitgauss=TRUE,                      ##      specifies that a Gaussian distribution shall be fitted to each feature
-                
-                verbose.columns=TRUE,               ##      return additional peak meta-data in the results
-                nSlaves=cpus)                       ##      Deprecated: specify that several CPU cores of the PC shall be used for the calculations
+if(FALSE){
+  #############################
+  ### process LC-HRMS dataset with XCMS
+  ### 1. find features (i.e. chromatographic peaks) in each sample file (mzXML)
+  {
+    tic()                                             ## start the timer
+    xset<-xcmsSet(method="centWave",                  ## XCMS processing with the centWave algorithm
+                  files=".",                          ##      files to process
+                  peakwidth=c(2, 5),                  ##      set the expected chromatographic peak width (baseline)
+                  ppm=5,                              ##      set the expected/allowed ppm deviation
+                  snthr=5,                            ##      minimum signal-to-noise ratio for chromatographic peaks in EICs
+                  
+                  integrate=1,                        ##      specify that the peak borders shall be found via the wavelet transformed data 
+                  mzCenterFun="wMeanApex3",           ##      this specifies how the features' mz values should be calculated
+                  mzdiff=0.0025,                      ##      minimum m/z difference for RT-overlapping chromatographic peaks
+                  prefilter=c(1, 1E5),                ##      filter criterion for initial ROI generation
+                  noise=5000,                         ##      noise intensity level
+                  fitgauss=TRUE,                      ##      specifies that a Gaussian distribution shall be fitted to each feature
+                  
+                  verbose.columns=TRUE,               ##      return additional peak meta-data in the results
+                  nSlaves=cpus)                       ##      Deprecated: specify that several CPU cores of the PC shall be used for the calculations
+    
+    xset@peaks = xset@peaks[100 <= xset@peaks[,"rt"] & xset@peaks[,"rt"] <= 750,]
+    xset@peaks = xset@peaks[xset@peaks[,"maxo"] >= 1E5,]
   
-  xset@peaks = xset@peaks[100 <= xset@peaks[,"rt"] & xset@peaks[,"rt"] <= 750,]
-  xset@peaks = xset@peaks[xset@peaks[,"maxo"] >= 1E5,]
-
-  for(i in 1:length(xset@filepaths)){
-    fi = xset@filepaths[i]
-    peaks = xset@peaks[xset@peaks[,"sample"]==i,]
-    hist(peaks[,"rtmax"]-peaks[,"rtmin"], breaks=c(-Inf, seq(0,250,0.5), Inf), xlim=c(0,20), main="Peak width (max-min)")
-    cat("File", xset@filepaths[i], "has", nrow(peaks), "features\n")
-    exportAsFeatureXML(peaks, paste0(gsub(".mzML", "", fi), "_xcms.featureML"))
-    write.table(peaks, paste0(gsub(".mzML", "", fi), "_xcms.tsv"), sep="\t", na="", quote=FALSE)
+    for(i in 1:length(xset@filepaths)){
+      fi = xset@filepaths[i]
+      peaks = xset@peaks[xset@peaks[,"sample"]==i,]
+      hist(peaks[,"rtmax"]-peaks[,"rtmin"], breaks=c(-Inf, seq(0,250,0.5), Inf), xlim=c(0,20), main="Peak width (max-min)")
+      cat("File", xset@filepaths[i], "has", nrow(peaks), "features\n")
+      exportAsFeatureXML(peaks, paste0(gsub(".mzML", "", fi), "_xcms.featureML"))
+      write.table(peaks, paste0(gsub(".mzML", "", fi), "_xcms.tsv"), sep="\t", na="", quote=FALSE)
+    }
+   
+    totTime=totTime+toc()                             ## add total time
+    message(sprintf("Calculating the xcms set object took %.2f minutes\n\n\n\n\n", toc()))  ## print how long the calculations needed
   }
- 
-  totTime=totTime+toc()                             ## add total time
-  message(sprintf("Calculating the xcms set object took %.2f minutes\n\n\n\n\n", toc()))  ## print how long the calculations needed
-}
-
-
-#############################
-### process LC-HRMS dataset with XCMS
-### 2. group features from all samples together and align their retention times
-{
-  tic()
-  xset.aligned <-  group(xset          , method="density", minfrac=0.33, bw=2, mzwid=0.03)
-  xset.aligned <- retcor(xset.aligned  , method="loess",   span=.5, plottype="none")
-  xset.aligned <-  group(xset.aligned  , method="density", minfrac=0.33, bw=2, mzwid=0.03)
-  xset.aligned <-fillPeaks(xset.aligned, method="chrom", nSlaves=cpus)
   
-  totTime=totTime+toc()                      ## add total time
-  message(sprintf("Aligning the chromatograms took %.2f minutes\n\n\n\n\n", toc()))
-}
-
-
-#############################
-### process LC-HRMS dataset with XCMS
-### 3. annotate the detected features with isotopes, adducts and group them
-{
-  tic()
-  xset.anno <-   xsAnnotate(xset.aligned, nSlaves=cpus, polarity="positive")  ## create xsAnnotate object
-  xset.anno <-    groupFWHM(xset.anno)                         ## group according to retention time
-  xset.anno <- findIsotopes(xset.anno, maxcharge=2, ppm=25)    ## search for isotopes
-  xset.anno <-    groupCorr(xset.anno)                         ## check grouping with EIC peaks
-  xset.anno <-  findAdducts(xset.anno, polarity="positive")    ## search for possible adduct combinations
   
-  totTime=totTime+toc()                  ## add total time
-  message(sprintf("Annotating the results took %.2f minutes\n\n\n\n\n", toc()))
+  #############################
+  ### process LC-HRMS dataset with XCMS
+  ### 2. group features from all samples together and align their retention times
+  {
+    tic()
+    xset.aligned <-  group(xset          , method="density", minfrac=0.33, bw=2, mzwid=0.03)
+    xset.aligned <- retcor(xset.aligned  , method="loess",   span=.5, plottype="none")
+    xset.aligned <-  group(xset.aligned  , method="density", minfrac=0.33, bw=2, mzwid=0.03)
+    xset.aligned <-fillPeaks(xset.aligned, method="chrom", nSlaves=cpus)
+    
+    totTime=totTime+toc()                      ## add total time
+    message(sprintf("Aligning the chromatograms took %.2f minutes\n\n\n\n\n", toc()))
+  }
+  
+  
+  #############################
+  ### process LC-HRMS dataset with XCMS
+  ### 3. annotate the detected features with isotopes, adducts and group them
+  {
+    tic()
+    xset.anno <-   xsAnnotate(xset.aligned, nSlaves=cpus, polarity="positive")  ## create xsAnnotate object
+    xset.anno <-    groupFWHM(xset.anno)                         ## group according to retention time
+    xset.anno <- findIsotopes(xset.anno, maxcharge=2, ppm=25)    ## search for isotopes
+    xset.anno <-    groupCorr(xset.anno)                         ## check grouping with EIC peaks
+    xset.anno <-  findAdducts(xset.anno, polarity="positive")    ## search for possible adduct combinations
+    
+    totTime=totTime+toc()                  ## add total time
+    message(sprintf("Annotating the results took %.2f minutes\n\n\n\n\n", toc()))
+  }
+  
+  
+  #############################
+  ### process LC-HRMS dataset with XCMS
+  ### 4. extract and save the results to a TSV file and also as a featureXML file so they can easily be visualized with ToppVIEW
+  peaks=getPeaklist(xset.anno)
+  peaks=cbind(Num=paste0("F", 1:nrow(peaks)), peaks)
+  write.table(peaks, file="./peaks.tsv", sep="\t", row.names=FALSE, quote=FALSE, na="")
+  
+  exportAsFeatureXML(peaks, "peaks.featureML")
+  
+  message(nrow(peaks), " features have been detected")
+  message(sprintf("FINISHED XCMS (%.1f minutes in total, %d cpus used)", totTime, cpus))
 }
-
-
-#############################
-### process LC-HRMS dataset with XCMS
-### 4. extract and save the results to a TSV file and also as a featureXML file so they can easily be visualized with ToppVIEW
-peaks=getPeaklist(xset.anno)
-peaks=cbind(Num=paste0("F", 1:nrow(peaks)), peaks)
-write.table(peaks, file="./peaks.tsv", sep="\t", row.names=FALSE, quote=FALSE, na="")
-
-exportAsFeatureXML(peaks, "peaks.featureML")
-
-message(nrow(peaks), " features have been detected")
-message(sprintf("FINISHED XCMS (%.1f minutes in total, %d cpus used)", totTime, cpus))
 
 
 
@@ -121,7 +123,7 @@ message(sprintf("FINISHED XCMS (%.1f minutes in total, %d cpus used)", totTime, 
 ## Part 2 - comparison of detected chrom. peaks with PeakBot and XCMS
 
 rm(list=ls())
-setwd("~/LCHRMS-GPU/peakbot_example/Data/PHM")
+setwd("~/PeakBot/peakbot_example/Data/PHM")
 
 library(ggplot2)
 library(grid)
@@ -158,10 +160,10 @@ for(fi in files){
       pmz = peaksPB$MZ[rowj]
       
       if(abs(xrt-prt)<2 && abs(xmz-pmz)/xmz*1E6<10){
-        peaksXCMS$foundPB[rowi]=cur
-        peaksPB$foundXCMS[rowj]=cur
-        peaksXCMS$num[rowi]=cur
-        peaksPB$num[rowj]=cur
+        peaksXCMS$foundPB[rowi]=paste0("A", cur)
+        peaksPB$foundXCMS[rowj]=paste0("A", cur)
+        peaksXCMS$num[rowi]=paste0("A", cur)
+        peaksPB$num[rowj]=paste0("A", cur)
         
         dat = rbind(dat, data.frame(rtx=xrt, rtp=prt, mzx=xmz, mzp=pmz, rtdiff=xrt-prt, mzdiff=(xmz-pmz)/xmz*1E6))
         
@@ -169,22 +171,26 @@ for(fi in files){
       }
     }
     if(peaksXCMS$num[rowi]==0){
-      peaksXCMS$num[rowi] = cur
+      peaksXCMS$num[rowi] = paste0("A", cur)
+      peaksXCMS$foundPB[rowi] = paste0("N", cur)
       cur = cur + 1
     }
   }
   for(rowj in 1:nrow(peaksPB)){
     if(peaksPB$num[rowj]==0){
-      peaksPB$num[rowj] = cur
+      peaksPB$num[rowj] = paste0("A", cur)
+      peaksPB$foundXCMS[rowj] = paste0("N", cur)
       cur = cur + 1
     }
-    
   }
   
-  l = list(xcms = peaksXCMS$num, PeakBot   = peaksPB$num)
-  a = length(unique(setdiff(l$xcms, l$PeakBot)))
-  ab = length(unique(intersect(l$xcms, l$PeakBot)))
-  b = length(unique(setdiff(l$PeakBot, l$xcms)))
+  l = list(xcms = peaksXCMS$num, PeakBot = peaksPB$num)
+  anums = unique(setdiff(l$xcms, l$PeakBot))
+  abnums = unique(intersect(l$xcms, l$PeakBot))
+  bnums = unique(setdiff(l$PeakBot, l$xcms))
+  a = length(anums)
+  ab = length(abnums)
+  b = length(bnums)
   res = rbind(res, c(a, round(a/(a+ab+b)*100,2), ab, round(ab/(a+ab+b)*100,2), b, round(b/(a+ab+b)*100,2)))
   rownames(res)[nrow(res)] = fi
   
@@ -195,28 +201,29 @@ for(fi in files){
   write.table(peaksXCMS[peaksXCMS$foundPB>0,], gsub("_xcms.tsv", "_both.tsv", fi), col.names=NA)
   
   if(fi=="08_EB3391_AOH_p_60"){
-    
     peaksPB = cbind(peaksPB, annotation = "")
-    anno = read.table("/home/users/cbueschl/LCHRMS-GPU/peakbot_example/Data/PHM/PositiveCentroidMode/__Annotated__08_EB3391_AOH_p_60_PBOnly.tsv", sep="\t", header=TRUE)
+    anno = read.table("/home/users/cbueschl/PeakBot/peakbot_example/Data/PHM/PositiveCentroidMode/__Annotated__08_EB3391_AOH_p_60_PBOnly.tsv", sep="\t", header=TRUE)
     for(rowi in 1:nrow(peaksPB)){
-      rt = peaksPB[rowi,"RT"]
-      mz = peaksPB[rowi,"MZ"]
-      for(rowj in 1:nrow(anno)){
-        if(abs(anno[rowj,"RT"]-rt)<=2 && abs(anno[rowj,"MZ"]-mz)*1E6/mz<=5){
-          peaksPB[rowi,"annotation"] = anno[rowj, "Type"]
+      if(grepl("N", peaksPB$foundXCMS[rowi])){
+        rt = peaksPB[rowi,"RT"]
+        mz = peaksPB[rowi,"MZ"]
+        for(rowj in 1:nrow(anno)){
+          if(abs(anno[rowj,"RT"]-rt)<=2 && abs(anno[rowj,"MZ"]-mz)*1E6/anno[rowj,"MZ"]<=10){
+            peaksPB[rowi,"annotation"] = anno[rowj, "Type"]
+          }
         }
       }
     }
-    print(paste0("Features only detected by PeakBot in sample ", fi))
-    print(table(peaksPB[peaksPB$foundXCMS==0,"annotation"]))
+    print(paste0("Features only detected by PeakBot in sample ", fi, ": ", length(peaksPB[grepl("N", peaksPB$foundXCMS),"annotation"])))
+    print(table(peaksPB[grepl("N", peaksPB$foundXCMS),"annotation"]))
   }
-  exportAsFeatureXML(peaksPB[peaksPB$foundXCMS==0,], gsub("_xcms.tsv", "_PBOnly.featureML", fi), "RT", "MZ", "RtStart", "RtEnd", "MzStart", "MzEnd")
-  write.table(peaksPB[peaksPB$foundXCMS==0,], gsub("_xcms.tsv", "_PBOnly.tsv", fi), col.names=NA)
+  exportAsFeatureXML(peaksPB[grepl("N", peaksPB$foundXCMS),], gsub("_xcms.tsv", "_PBOnly.featureML", fi), "RT", "MZ", "RtStart", "RtEnd", "MzStart", "MzEnd")
+  write.table(peaksPB[grepl("N", peaksPB$foundXCMS),], gsub("_xcms.tsv", "_PBOnly.tsv", fi), col.names=NA)
   
   
   if(fi=="08_EB3391_AOH_p_60"){
     peaksXCMS = cbind(peaksXCMS, annotation = "")
-    anno = read.table("/home/users/cbueschl/LCHRMS-GPU/peakbot_example/Data/PHM/PositiveCentroidMode/__Annotated__08_EB3391_AOH_p_60_xcmsOnly.tsv", sep="\t", header=TRUE)
+    anno = read.table("/home/users/cbueschl/PeakBot/peakbot_example/Data/PHM/PositiveCentroidMode/__Annotated__08_EB3391_AOH_p_60_xcmsOnly.tsv", sep="\t", header=TRUE)
     for(rowi in 1:nrow(peaksXCMS)){
       rt = peaksXCMS[rowi,"rt"]
       mz = peaksXCMS[rowi,"mz"]
@@ -226,11 +233,11 @@ for(fi in files){
         }
       }
     }
-    print(paste0("Features only detected by XCMS in sample ", fi))
-    print(table(peaksXCMS[peaksXCMS$foundPB==0,"annotation"]))
+    print(paste0("Features only detected by XCMS in sample ", fi, ": ", length(peaksXCMS[grepl("N", peaksXCMS$foundPB),"annotation"])))
+    print(table(peaksXCMS[grepl("N", peaksXCMS$foundPB),"annotation"]))
   }
-  exportAsFeatureXML(peaksXCMS[peaksXCMS$foundPB==0,], gsub("_xcms.tsv", "_xcmsOnly.featureML", fi))
-  write.table(peaksXCMS[peaksXCMS$foundPB==0,], gsub("_xcms.tsv", "_xcmsOnly.tsv", fi), col.names=NA)
+  exportAsFeatureXML(peaksXCMS[grepl("N", peaksXCMS$foundPB),], gsub("_xcms.tsv", "_xcmsOnly.featureML", fi))
+  write.table(peaksXCMS[grepl("N", peaksXCMS$foundPB),], gsub("_xcms.tsv", "_xcmsOnly.tsv", fi), col.names=NA)
 }
 print(res)
 
