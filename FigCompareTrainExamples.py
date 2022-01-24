@@ -1,9 +1,17 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-## run in python >=3.9
+## run in python >=3.8
 ## activate conda environment on jucuda
-## conda activate python3.9
+## conda activate python3.8
+
+import argparse
+
+parser = argparse.ArgumentParser(description='Train a new PeakBot Model ')
+parser.add_argument('--replicates', action='store',
+                    default=1, nargs='?', type=int, 
+                    help='Number of replicate trainings. Used for estimating performance of repeated training. Default 1')
+args = parser.parse_args()
 
 location = "JuCuda"  ## JuCuda, HomePC
 
@@ -89,22 +97,13 @@ if __name__ == "__main__":
         "670_Sequence3_LVL1_2"  : {"file": "./peakbot_example/Data/WheatEar/670_Sequence3_LVL1_2.mzXML"  , "params": "WheatEar"},
         "670_Sequence3_LVL1_3"  : {"file": "./peakbot_example/Data/WheatEar/670_Sequence3_LVL1_3.mzXML"  , "params": "WheatEar"},
 
-        #"670_Sequence3_LVL1x2_1": {"file": "./peakbot_example/Data/WheatEar/670_Sequence3_LVL1x2_1.mzXML", "params": "WheatEar"},
-        #"670_Sequence3_LVL1x2_2": {"file": "./peakbot_example/Data/WheatEar/670_Sequence3_LVL1x2_2.mzXML", "params": "WheatEar"},
-        #"670_Sequence3_LVL1x2_3": {"file": "./peakbot_example/Data/WheatEar/670_Sequence3_LVL1x2_3.mzXML", "params": "WheatEar"},
+        "670_Sequence3_LVL1x2_1": {"file": "./peakbot_example/Data/WheatEar/670_Sequence3_LVL1x2_1.mzXML", "params": "WheatEar"},
+        "670_Sequence3_LVL1x2_2": {"file": "./peakbot_example/Data/WheatEar/670_Sequence3_LVL1x2_2.mzXML", "params": "WheatEar"},
+        "670_Sequence3_LVL1x2_3": {"file": "./peakbot_example/Data/WheatEar/670_Sequence3_LVL1x2_3.mzXML", "params": "WheatEar"},
 
-        #"670_Sequence3_LVL1x4_1": {"file": "./peakbot_example/Data/WheatEar/670_Sequence3_LVL1x4_1.mzXML", "params": "WheatEar"},
-        #"670_Sequence3_LVL1x4_2": {"file": "./peakbot_example/Data/WheatEar/670_Sequence3_LVL1x4_2.mzXML", "params": "WheatEar"},
-        #"670_Sequence3_LVL1x4_3": {"file": "./peakbot_example/Data/WheatEar/670_Sequence3_LVL1x4_3.mzXML", "params": "WheatEar"},
-
-        #"05_EB3388_AOH_p_0" : {"file": "./peakbot_example/Data/PHM/05_EB3388_AOH_p_0.mzXML" , "params": "PHM"},
-        #"06_EB3389_AOH_p_10": {"file": "./peakbot_example/Data/PHM/06_EB3389_AOH_p_10.mzXML", "params": "PHM"},
-        #"07_EB3390_AOH_p_20": {"file": "./peakbot_example/Data/PHM/07_EB3390_AOH_p_20.mzXML", "params": "PHM"},
-        #"08_EB3391_AOH_p_60": {"file": "./peakbot_example/Data/PHM/08_EB3391_AOH_p_60.mzXML", "params": "PHM"},
-        #"16_EB3392_AME_p_0":  {"file": "./peakbot_example/Data/PHM/16_EB3392_AME_p_0.mzXML" , "params": "PHM"},
-        #"17_EB3393_AME_p_10": {"file": "./peakbot_example/Data/PHM/17_EB3393_AME_p_10.mzXML", "params": "PHM"},
-        #"18_EB3394_AME_p_20": {"file": "./peakbot_example/Data/PHM/18_EB3394_AME_p_20.mzXML", "params": "PHM"},
-        #"19_EB3395_AME_p_60": {"file": "./peakbot_example/Data/PHM/19_EB3395_AME_p_60.mzXML", "params": "PHM"}
+        "670_Sequence3_LVL1x4_1": {"file": "./peakbot_example/Data/WheatEar/670_Sequence3_LVL1x4_1.mzXML", "params": "WheatEar"},
+        "670_Sequence3_LVL1x4_2": {"file": "./peakbot_example/Data/WheatEar/670_Sequence3_LVL1x4_2.mzXML", "params": "WheatEar"},
+        "670_Sequence3_LVL1x4_3": {"file": "./peakbot_example/Data/WheatEar/670_Sequence3_LVL1x4_3.mzXML", "params": "WheatEar"},
     }
         
     
@@ -158,7 +157,7 @@ if __name__ == "__main__":
         random.seed(0)
         histAll = None
         for trainExamples in [len(wepeaksTrain), 2000, 1500, 1000, 500, 250, 150, 100, 50, 25, 10]:
-            for rep in range(3):
+            for rep in range(args.replicates):
 
                 try:
                     os.remove(peakBotModelFile)
@@ -388,7 +387,7 @@ if __name__ == "__main__":
                       p9.aes("factor(TrainExamples)", "value", color="metric", group="factor(TrainExamples)"))
             + p9.facet_grid("metric~set", scales="free_y")
             + p9.geom_boxplot(p9.aes("factor(TrainExamples)", "value", group="factor(TrainExamples)"))
-            + p9.geom_jitter()
+            + p9.geom_jitter(height=0)
             + p9.stat_summary(geom="line")
             + p9.ggtitle("Comparison of different sets for training")
             + p9.xlab("Number of training examples used for training a new PeakBot model")
@@ -401,7 +400,7 @@ if __name__ == "__main__":
                       p9.aes("factor(TrainExamples)", "value", color="metric", group="factor(TrainExamples)"))
             + p9.facet_grid("metric~.", scales="free_y")
             + p9.geom_boxplot(p9.aes("factor(TrainExamples)", "value", group="factor(TrainExamples)"))
-            + p9.geom_jitter()
+            + p9.geom_jitter(height=0)
             + p9.stat_summary(geom="line")
             + p9.ggtitle("Comparison of different sets for training")
             + p9.xlab("Number of training examples used for training a new PeakBot model")
