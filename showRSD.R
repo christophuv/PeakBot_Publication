@@ -1,4 +1,10 @@
 
+rm(list=ls())
+cat("\014")  
+#setwd("D:/PeakBot_Data/PHM_comparison")
+setwd("~/PeakBot/comparison")
+
+
 library(ggplot2)
 library(magrittr)
 library(dplyr)

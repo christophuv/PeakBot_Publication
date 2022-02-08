@@ -11,6 +11,7 @@ parser = argparse.ArgumentParser(description='Train a new PeakBot Model ')
 parser.add_argument('--replicates', action='store',
                     default=1, nargs='?', type=int, 
                     help='Number of replicate trainings. Used for estimating performance of repeated training. Default 1')
+parser.add_argument('--train', dest='trainModels', action='store_true')
 args = parser.parse_args()
 
 location = "JuCuda"  ## JuCuda, HomePC
@@ -121,7 +122,7 @@ if __name__ == "__main__":
     exportBatchSize= 2048
     examplesDir = "/home/users/cbueschl/_ScratchFromJuCUDA/burning_scratch/cbueschl/examples/CUDA"
     peakBotModelFile = "/home/users/cbueschl/_ScratchFromJuCUDA/burning_scratch/cbueschl/examples/CUDA/PBmodel.model.h5"
-    logDir = os.path.join(".", "logs")
+    logDir = "/home/users/cbueschl/_ScratchFromJuCUDA/burning_scratch/cbueschl/PeakBot/logs/"
         
     strategy = tf.distribute.OneDeviceStrategy(device="/gpu:0")
     
@@ -131,23 +132,7 @@ if __name__ == "__main__":
     
     ###############################################
     ### Generate train instances
-    if True:
-        headers, wepeaks       = peakbot.readTSVFile(os.path.join(".", "peakbot_example", "Reference", "WheatEar_Peaks.tsv") , convertToMinIfPossible = True)
-        headers, wewalls       = peakbot.readTSVFile(os.path.join(".", "peakbot_example", "Reference", "WheatEar_Walls.tsv")      , convertToMinIfPossible = True)
-        headers, webackgrounds = peakbot.readTSVFile(os.path.join(".", "peakbot_example", "Reference", "WheatEar_Backgrounds.tsv"), convertToMinIfPossible = True)
-        random.shuffle(wepeaks)
-        a = 2400
-        wepeaksTrain = wepeaks[:a]
-        wepeaksVal = wepeaks[a:]
-
-        dsProps = {
-            "T"  : {"files": inFiles , "peaks": wepeaksTrain, "walls": wewalls, "backgrounds": webackgrounds, "n": math.ceil(peakbot.Config.BATCHSIZE*peakbot.Config.STEPSPEREPOCH*peakbot.Config.EPOCHS/len(inFiles)), "shuffleSteps": 1E5},
-            "V"  : {"files": inFiles , "peaks": wepeaksTrain, "walls": wewalls, "backgrounds": webackgrounds, "n": math.ceil(peakbot.Config.BATCHSIZE*peakbot.Config.STEPSPEREPOCH*128/len(inFiles))                  , "shuffleSteps": 1E4},
-            "iT" : {"files": exFiles , "peaks": wepeaksVal  , "walls": wewalls, "backgrounds": webackgrounds, "n": math.ceil(peakbot.Config.BATCHSIZE*peakbot.Config.STEPSPEREPOCH*128/len(exFiles))                  , "shuffleSteps": 1E4},
-            "iV" : {"files": exFiles , "peaks": wepeaksVal  , "walls": wewalls, "backgrounds": webackgrounds, "n": math.ceil(peakbot.Config.BATCHSIZE*peakbot.Config.STEPSPEREPOCH*128/len(exFiles))                  , "shuffleSteps": 1E4},
-        }
-
-        print("There are %d training examples in the T dataset"%len(wepeaksTrain))
+    if args.trainModels:
 
         try:
             os.remove(os.path.join(".", "FigCompareTrainExamples.pandas.pickle"))
@@ -156,8 +141,24 @@ if __name__ == "__main__":
 
         random.seed(0)
         histAll = None
-        for trainExamples in [len(wepeaksTrain), 2000, 1500, 1000, 500, 250, 150, 100, 50, 25, 10]:
+        
+        for trainExamples in [2000, 1500, 1000, 500, 250, 150, 100, 50, 25, 10]:
             for rep in range(args.replicates):
+                headers, wepeaks       = peakbot.readTSVFile(os.path.join(".", "peakbot_example", "Reference", "WheatEar_Peaks.tsv")      , convertToMinIfPossible = True)
+                headers, wewalls       = peakbot.readTSVFile(os.path.join(".", "peakbot_example", "Reference", "WheatEar_Walls.tsv")      , convertToMinIfPossible = True)
+                headers, webackgrounds = peakbot.readTSVFile(os.path.join(".", "peakbot_example", "Reference", "WheatEar_Backgrounds.tsv"), convertToMinIfPossible = True)
+                random.shuffle(wepeaks)
+                wepeaksTrain = wepeaks[:trainExamples]
+                wepeaksVal = wepeaks[trainExamples:]
+
+                dsProps = {
+                    "T"  : {"files": inFiles , "peaks": wepeaksTrain, "walls": wewalls, "backgrounds": webackgrounds, "n": math.ceil(peakbot.Config.BATCHSIZE*peakbot.Config.STEPSPEREPOCH*peakbot.Config.EPOCHS/len(inFiles)), "shuffleSteps": 1E5},
+                    "V"  : {"files": inFiles , "peaks": wepeaksTrain, "walls": wewalls, "backgrounds": webackgrounds, "n": math.ceil(peakbot.Config.BATCHSIZE*peakbot.Config.STEPSPEREPOCH*128/len(inFiles))                  , "shuffleSteps": 1E4},
+                    "iT" : {"files": exFiles , "peaks": wepeaksVal  , "walls": wewalls, "backgrounds": webackgrounds, "n": math.ceil(peakbot.Config.BATCHSIZE*peakbot.Config.STEPSPEREPOCH*128/len(exFiles))                  , "shuffleSteps": 1E4},
+                    "iV" : {"files": exFiles , "peaks": wepeaksVal  , "walls": wewalls, "backgrounds": webackgrounds, "n": math.ceil(peakbot.Config.BATCHSIZE*peakbot.Config.STEPSPEREPOCH*128/len(exFiles))                  , "shuffleSteps": 1E4},
+                }
+
+                print("There are %d training examples in the T dataset and %d peaks used for validation"%(len(wepeaksTrain), len(wepeaksVal)))
 
                 try:
                     os.remove(peakBotModelFile)
@@ -211,9 +212,6 @@ if __name__ == "__main__":
                             ###############################################
                             ### Generate train data
                             peaks = dsProps[ds]["peaks"]
-                            if ds == "T":
-                                print("  | .. Restricting peaks to %d examples"%trainExamples)
-                                peaks = random.sample(dsProps[ds]["peaks"], trainExamples)
                             peakbot.train.cuda.generateTestInstances(mzxml, "'%s':'%s'"%(inFile, filterLine), 
                                                                      peaks, dsProps[ds]["walls"], dsProps[ds]["backgrounds"],
                                                                      nTestExamples = dsProps[ds]["n"], exportPath = os.path.join(examplesDir, ds), 
@@ -369,21 +367,15 @@ if __name__ == "__main__":
     ###############################################
     ### Show training metrices
     df = pd.read_pickle(os.path.join(".", "FigCompareTrainExamples.pandas.pickle"))
-    df = df[df["metric"]!="loss"]
-    df["metric"] = df["metric"].str.replace("07_EB3390_AOH_p_20", "07.EB3390.AOH.p.20")
-    df["metric"] = df["metric"].str.replace("08_EB3391_AOH_p_60", "08.EB3391.AOH.p.60")
-    df["metric"] = df["metric"].str.replace("670_Sequence3_LVL1_1", "670.Sequence3.LVL1.1")
-    df["metric"] = df["metric"].str.replace("670_Sequence3_LVL1_2", "670.Sequence3.LVL1.2")
-    df["metric"] = df["metric"].str.replace("670_Sequence3_LVL1_3", "670.Sequence3.LVL1.3")
-    df["metric"] = df["metric"].str.replace("_", "\n")
-    df["metric"] = df["metric"].str.replace("07.EB3390.AOH.p.20", "07_EB3390_AOH_p_20")
-    df["metric"] = df["metric"].str.replace("08.EB3391.AOH.p.60", "08_EB3391_AOH_p_60")
-    df["metric"] = df["metric"].str.replace("670.Sequence3.LVL1.1", "670_Sequence3_LVL1_1")
-    df["metric"] = df["metric"].str.replace("670.Sequence3.LVL1.2", "670_Sequence3_LVL1_2")
-    df["metric"] = df["metric"].str.replace("670.Sequence3.LVL1.3", "670_Sequence3_LVL1_3")
-    df["metric"] = df["metric"].str.replace("nPeaks ", "Number of features\n")
+    df = df[[i in ["box_iou", "box_loss", "peakType_categorical_accuracy", "peakType_pF1", "peakType_pTPR", "peakType_pFPR", "peakType_PeakNopeakAccuracy", "ACCPeakNopeak", "center_loss"] or i.find("nPeaks")>-1 for i in list(df.metric)]]
+    df["metric"] = df["metric"].str.replace("peakType_PeakNopeakAccuracy", "peakType_ACCNoPeak")
+    df["metric"] = df["metric"].str.replace("peakType_categorical_accuracy", "peakType_CatACC")
+    df["metric"] = df["metric"].str.replace("peakType", "PT_")
+    df["metric"] = df["metric"].str.replace("box_", "BOX_")
+    df["metric"] = df["metric"].str.replace("center_", "CENTER_")
+    df["metric"] = df["metric"].str.replace("670_Sequence3_", "")
 
-    plot = (p9.ggplot(df[-df["metric"].str.startswith("Number of features")], 
+    plot = (p9.ggplot(df[-df["metric"].str.startswith("nPeaks")], 
                       p9.aes("factor(TrainExamples)", "value", color="metric", group="factor(TrainExamples)"))
             + p9.facet_grid("metric~set", scales="free_y")
             + p9.geom_boxplot(p9.aes("factor(TrainExamples)", "value", group="factor(TrainExamples)"))
@@ -396,7 +388,9 @@ if __name__ == "__main__":
     p9.options.figure_size = (12, 12)
     p9.ggsave(plot=plot, filename="./FigCompareTrainExamples_Metrics.png", height=12, width=12, dpi=300)
 
-    plot = (p9.ggplot(df[df["metric"].str.startswith("Number of features")], 
+    df = df[df["metric"].str.startswith("nPeaks")]
+    df["metric"] = df["metric"].str.replace("nPeaks ", "")
+    plot = (p9.ggplot(df, 
                       p9.aes("factor(TrainExamples)", "value", color="metric", group="factor(TrainExamples)"))
             + p9.facet_grid("metric~.", scales="free_y")
             + p9.geom_boxplot(p9.aes("factor(TrainExamples)", "value", group="factor(TrainExamples)"))
@@ -407,9 +401,9 @@ if __name__ == "__main__":
             + p9.ylab("Number of detected features")
             + p9.theme(legend_position="none"))
     p9.options.figure_size = (19, 19)
-    p9.ggsave(plot=plot, filename="./FigCompareTrainExamples_Detected.png", height=12, width=12, dpi=300)
+    p9.ggsave(plot=plot, filename="./FigCompareTrainExamples_Detected.png", height=12, width=8, dpi=300)
 
 
-    print("\n\n\n\n\n\n\n\n\n\n")
+    print("\n\n")
 
  
