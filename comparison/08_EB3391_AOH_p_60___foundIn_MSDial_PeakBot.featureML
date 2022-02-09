@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+  <featureMap version="1.4" id="fm_16311276685788915066" xsi:noNamespaceSchemaLocation="http://open-ms.sourceforge.net/schemas/FeatureXML_1_4.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <dataProcessing completion_time="2011-02-09T11:23:14">
+      <software name="XCMS" version="3.4.4" />
+    </dataProcessing>
+    <featureList count="10">
+<feature id="171">
+  <position dim="0">554.147000</position>
+  <position dim="1">279.231600</position>
+  <intensity>1.000000</intensity>
+  <quality dim="0">0</quality>
+  <quality dim="1">0</quality>
+  <overallquality>0</overallquality>
+  <charge>1</charge>
+  <convexhull nr="0">
+    <pt x="549.147000" y="279.230204" />
+    <pt x="549.147000" y="279.232996" />
+    <pt x="559.147000" y="279.230204" />
+    <pt x="559.147000" y="279.232996" />
+  </convexhull>
+</feature>
+<feature id="173">
+  <position dim="0">555.024000</position>
+  <position dim="1">337.234900</position>
+  <intensity>1.000000</intensity>
+  <quality dim="0">0</quality>
+  <quality dim="1">0</quality>
+  <overallquality>0</overallquality>
+  <charge>1</charge>
+  <convexhull nr="0">
+    <pt x="550.024000" y="337.233214" />
+    <pt x="550.024000" y="337.236586" />
+    <pt x="560.024000" y="337.233214" />
+    <pt x="560.024000" y="337.236586" />
+  </convexhull>
+</feature>
+<feature id="196">
+  <position dim="0">561.168000</position>
+  <position dim="1">337.235000</position>
+  <intensity>1.000000</intensity>
+  <quality dim="0">0</quality>
+  <quality dim="1">0</quality>
+  <overallquality>0</overallquality>
+  <charge>1</charge>
+  <convexhull nr="0">
+    <pt x="556.168000" y="337.233314" />
+    <pt x="556.168000" y="337.236686" />
+    <pt x="566.168000" y="337.233314" />
+    <pt x="566.168000" y="337.236686" />
+  </convexhull>
+</feature>
+<feature id="197">
+  <position dim="0">561.607000</position>
+  <position dim="1">279.231750</position>
+  <intensity>1.000000</intensity>
+  <quality dim="0">0</quality>
+  <quality dim="1">0</quality>
+  <overallquality>0</overallquality>
+  <charge>1</charge>
+  <convexhull nr="0">
+    <pt x="556.607000" y="279.230354" />
+    <pt x="556.607000" y="279.233146" />
+    <pt x="566.607000" y="279.230354" />
+    <pt x="566.607000" y="279.233146" />
+  </convexhull>
+</feature>
+<feature id="381">
+  <position dim="0">612.951000</position>
+  <position dim="1">303.231660</position>
+  <intensity>1.000000</intensity>
+  <quality dim="0">0</quality>
+  <quality dim="1">0</quality>
+  <overallquality>0</overallquality>
+  <charge>1</charge>
+  <convexhull nr="0">
+    <pt x="607.951000" y="303.230144" />
+    <pt x="607.951000" y="303.233176" />
+    <pt x="617.951000" y="303.230144" />
+    <pt x="617.951000" y="303.233176" />
+  </convexhull>
+</feature>
+<feature id="650">
+  <position dim="0">661.222000</position>
+  <position dim="1">429.318020</position>
+  <intensity>1.000000</intensity>
+  <quality dim="0">0</quality>
+  <quality dim="1">0</quality>
+  <overallquality>0</overallquality>
+  <charge>1</charge>
+  <convexhull nr="0">
+    <pt x="656.222000" y="429.315873" />
+    <pt x="656.222000" y="429.320167" />
+    <pt x="666.222000" y="429.315873" />
+    <pt x="666.222000" y="429.320167" />
+  </convexhull>
+</feature>
+<feature id="671">
+  <position dim="0">667.803000</position>
+  <position dim="1">429.318080</position>
+  <intensity>1.000000</intensity>
+  <quality dim="0">0</quality>
+  <quality dim="1">0</quality>
+  <overallquality>0</overallquality>
+  <charge>1</charge>
+  <convexhull nr="0">
+    <pt x="662.803000" y="429.315933" />
+    <pt x="662.803000" y="429.320227" />
+    <pt x="672.803000" y="429.315933" />
+    <pt x="672.803000" y="429.320227" />
+  </convexhull>
+</feature>
+<feature id="908">
+  <position dim="0">707.751000</position>
+  <position dim="1">807.568660</position>
+  <intensity>1.000000</intensity>
+  <quality dim="0">0</quality>
+  <quality dim="1">0</quality>
+  <overallquality>0</overallquality>
+  <charge>1</charge>
+  <convexhull nr="0">
+    <pt x="702.751000" y="807.564622" />
+    <pt x="702.751000" y="807.572698" />
+    <pt x="712.751000" y="807.564622" />
+    <pt x="712.751000" y="807.572698" />
+  </convexhull>
+</feature>
+<feature id="919">
+  <position dim="0">709.049000</position>
+  <position dim="1">579.432600</position>
+  <intensity>1.000000</intensity>
+  <quality dim="0">0</quality>
+  <quality dim="1">0</quality>
+  <overallquality>0</overallquality>
+  <charge>1</charge>
+  <convexhull nr="0">
+    <pt x="704.049000" y="579.429703" />
+    <pt x="704.049000" y="579.435497" />
+    <pt x="714.049000" y="579.429703" />
+    <pt x="714.049000" y="579.435497" />
+  </convexhull>
+</feature>
+<feature id="947">
+  <position dim="0">711.242000</position>
+  <position dim="1">807.567700</position>
+  <intensity>1.000000</intensity>
+  <quality dim="0">0</quality>
+  <quality dim="1">0</quality>
+  <overallquality>0</overallquality>
+  <charge>1</charge>
+  <convexhull nr="0">
+    <pt x="706.242000" y="807.563662" />
+    <pt x="706.242000" y="807.571738" />
+    <pt x="716.242000" y="807.563662" />
+    <pt x="716.242000" y="807.571738" />
+  </convexhull>
+</feature>
+    </featureList>
+  </featureMap>

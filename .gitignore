@@ -1,5 +1,6 @@
 # ignore all subdirectories
 */*
+!comparison/*
 peakbot/
 peakbot_example/
 

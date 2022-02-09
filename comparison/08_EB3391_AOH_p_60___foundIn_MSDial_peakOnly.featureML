@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+  <featureMap version="1.4" id="fm_16311276685788915066" xsi:noNamespaceSchemaLocation="http://open-ms.sourceforge.net/schemas/FeatureXML_1_4.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <dataProcessing completion_time="2011-02-09T11:23:14">
+      <software name="XCMS" version="3.4.4" />
+    </dataProcessing>
+    <featureList count="2">
+<feature id="1054">
+  <position dim="0">717.817800</position>
+  <position dim="1">784.584000</position>
+  <intensity>1.000000</intensity>
+  <quality dim="0">0</quality>
+  <quality dim="1">0</quality>
+  <overallquality>0</overallquality>
+  <charge>1</charge>
+  <convexhull nr="0">
+    <pt x="712.817800" y="784.580077" />
+    <pt x="712.817800" y="784.587923" />
+    <pt x="722.817800" y="784.580077" />
+    <pt x="722.817800" y="784.587923" />
+  </convexhull>
+</feature>
+<feature id="1066">
+  <position dim="0">723.961200</position>
+  <position dim="1">762.589100</position>
+  <intensity>1.000000</intensity>
+  <quality dim="0">0</quality>
+  <quality dim="1">0</quality>
+  <overallquality>0</overallquality>
+  <charge>1</charge>
+  <convexhull nr="0">
+    <pt x="718.961200" y="762.585287" />
+    <pt x="718.961200" y="762.592913" />
+    <pt x="728.961200" y="762.585287" />
+    <pt x="728.961200" y="762.592913" />
+  </convexhull>
+</feature>
+    </featureList>
+  </featureMap>
