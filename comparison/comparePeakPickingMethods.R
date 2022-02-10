@@ -348,20 +348,19 @@ for(grp in sort(unique(grps))){
   df = rbind(df, 
              data.frame(rowi = c(1:nrow(dat))[use], grp = rep(grp, times = sum(use)), rsd = temp[use]))
 }
+dfs = df %>% group_by(grp) %>% summarise(meanRSD = mean(rsd), medianRSD = median(rsd), q90RSD = quantile(rsd, probs=0.9), n = n())
 
 
-p <- ggplot(data = df, mapping = aes(x=rsd, group=grp)) + theme_minimal()
-dfs = df %>% group_by(grp) %>% summarise(meanRSD = mean(rsd), medianRSD = median(rsd), q90RSD = quantile(rsd, probs=0.9))
+p <- ggplot(data = df, mapping = aes(x=rsd*100, group=grp)) + theme_minimal()
 p <- p + facet_wrap(~grp)
 p <- p + geom_vline(data = dfs, mapping=aes(xintercept = meanRSD), colour="grey")
 p <- p + geom_vline(data = dfs, mapping=aes(xintercept = medianRSD), colour="grey")
 p <- p + geom_vline(data = dfs, mapping=aes(xintercept = q90RSD), colour="grey")
-p <- p + geom_label(data = dfs, mapping=aes(label=sprintf("avg: %.1f%%", 100*meanRSD), x = 0.22, y = 8000, hjust=0))
-p <- p + geom_label(data = dfs, mapping=aes(label=sprintf("med: %.1f%%", 100*medianRSD), x = 0.22, y = 7200, hjust=0))
-p <- p + geom_label(data = dfs, mapping=aes(label=sprintf("P90: %.1f%%", 100*q90RSD), x = 0.22, y = 6400, hjust=0))
+p <- p + geom_label(data = dfs, mapping=aes(label=sprintf("avg: %.1f%%\nmed: %.1f%%\nP90: %.1f%%\nn: %d", 100*meanRSD, 100*medianRSD, 100*q90RSD, n), x = 70, y = 8750), hjust=1, vjust=1, size=3)
 p <- p + geom_histogram()
-p <- p + ggtitle("Relative standard deviation of replicates") + labs(caption="WheatEar dataset\nlvl1 = 2\U003BCl, lvl1x2 = 4\U003BCl, lvl1x4 = 8 \U003BCl injection volumne\nreplicates with 0 peak area omitted; avg: average, med: median, P90: 90% percentile") + xlab("Relative standard deviation") + ylab("Number of features")
-p <- p + xlim(c(0, 0.75))
+p <- p + ggtitle("Relative standard deviation of replicates") + labs(caption="WheatEar dataset\nlvl1 = 2\U003BCl, lvl1x2 = 4\U003BCl, lvl1x4 = 8 \U003BCl injection volumne\nreplicates with 0 peak area omitted; avg: average, med: median, P90: 90% percentile")
+p <- p + xlab("Relative standard deviation (%)") + ylab("Number of features")
+p <- p + xlim(c(0, 75))
 print(p)
 figurePlots[["rsd"]] = p
 
